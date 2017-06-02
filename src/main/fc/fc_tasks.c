@@ -42,6 +42,8 @@
 #include "drivers/vtx_common.h"
 #include "drivers/transponder_ir.h"
 
+#include "drivers/light_led.h"
+
 #include "fc/config.h"
 #include "fc/fc_msp.h"
 #include "fc/fc_tasks.h"
@@ -79,6 +81,7 @@
 #include "sensors/gyroanalyse.h"
 #include "sensors/sonar.h"
 #include "sensors/esc_sensor.h"
+#include "sensors/leddar.h"
 
 #include "scheduler/scheduler.h"
 
@@ -190,6 +193,16 @@ static void taskUpdateBaro(timeUs_t currentTimeUs)
 }
 #endif
 
+//#ifdef LEDDAR
+static void taskLeddarUpdate(timeUs_t currentTimeUs)
+{
+    //LED0_TOGGLE;
+}
+//#endif
+
+
+
+//add LEDDAR here
 #if defined(BARO) || defined(SONAR)
 static void taskCalculateAltitude(timeUs_t currentTimeUs)
 {
@@ -299,6 +312,11 @@ void fcTasksInit(void)
 #ifdef BARO
     setTaskEnabled(TASK_BARO, sensors(SENSOR_BARO));
 #endif
+////////////
+//#ifdef LEDDAR
+    setTaskEnabled(TASK_LEDDAR, sensors(SENSOR_LEDDAR));
+//#endif
+/////////
 #ifdef SONAR
     setTaskEnabled(TASK_SONAR, sensors(SENSOR_SONAR));
 #endif
@@ -478,6 +496,15 @@ cfTask_t cfTasks[TASK_COUNT] = {
     },
 #endif
 
+//#ifdef LEDDAR
+    [TASK_LEDDAR] = {
+        .taskName = "LEDDAR",
+        .taskFunc = leddarUpdate,
+        .desiredPeriod = TASK_PERIOD_MS(100),
+        .staticPriority = TASK_PRIORITY_LOW,
+    },
+//#endif
+
 #ifdef SONAR
     [TASK_SONAR] = {
         .taskName = "SONAR",
@@ -487,6 +514,8 @@ cfTask_t cfTasks[TASK_COUNT] = {
     },
 #endif
 
+
+//NEED TO add LEDDAR to this
 #if defined(BARO) || defined(SONAR)
     [TASK_ALTITUDE] = {
         .taskName = "ALTITUDE",

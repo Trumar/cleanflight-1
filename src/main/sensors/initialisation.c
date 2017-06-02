@@ -36,6 +36,7 @@
 #include "sensors/gyro.h"
 #include "sensors/compass.h"
 #include "sensors/sonar.h"
+#include "sensors/leddar.h"
 #include "sensors/initialisation.h"
 
 uint8_t detectedSensors[SENSOR_INDEX_COUNT] = { GYRO_NONE, ACC_NONE, BARO_NONE, MAG_NONE };
@@ -76,6 +77,12 @@ bool sensorsAutodetect(void)
         sonarInit(sonarConfig());
     }
 #endif
+
+//#ifdef LEDDAR
+//if (feature(FEATURE_LEDDAR)) {
+	sensorsSet(SENSOR_LEDDAR);
+//}
+//#endif
 
     return true;
 }

@@ -510,6 +510,7 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
     }
 #endif
 
+    //need to add LEDDAR here
 #if defined(BARO) || defined(SONAR)
     // updateRcCommands sets rcCommand, which is needed by updateAltHoldState and updateSonarAltHoldState
     updateRcCommands();

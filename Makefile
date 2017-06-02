@@ -786,6 +786,7 @@ FC_SRC = \
             io/ledstrip.c \
             io/osd.c \
             sensors/sonar.c \
+            sensors/leddar.c \
             sensors/barometer.c \
             telemetry/telemetry.c \
             telemetry/crsf.c \

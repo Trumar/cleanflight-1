@@ -39,6 +39,8 @@
 // 2 - time spent in scheduler
 // 3 - time spent executing check function
 
+//#define DEBUG_SCHEDULER 2
+
 static cfTask_t *currentTask = NULL;
 
 static uint32_t totalWaitingTasks;

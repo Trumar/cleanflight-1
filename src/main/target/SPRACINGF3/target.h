@@ -17,6 +17,7 @@
 
 #pragma once
 
+
 #if defined(RMDO)
 #define TARGET_BOARD_IDENTIFIER "RMDO"
 #elif defined(ZCOREF3)
@@ -95,6 +96,8 @@
 #endif
 
 #if defined(SPRACINGF3) || defined(FLIP32F3OSD)
+
+
 #define SONAR
 #define SONAR_TRIGGER_PIN       PB0
 #define SONAR_ECHO_PIN          PB1
@@ -111,6 +114,8 @@
 #define SONAR
 #define SONAR_TRIGGER_PIN       PB0
 #define SONAR_ECHO_PIN          PB1
+
+#define LEDDAR
 
 #define USE_BARO_MS5611
 #define USE_BARO_BMP085

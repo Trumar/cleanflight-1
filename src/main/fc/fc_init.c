@@ -112,6 +112,7 @@
 #include "sensors/initialisation.h"
 #include "sensors/sensors.h"
 #include "sensors/sonar.h"
+#include "sensors/leddar.h"
 
 #include "telemetry/telemetry.h"
 
@@ -398,6 +399,14 @@ void init(void)
     }
 #endif
 
+    /*
+#ifdef LEDDAR
+    if (feature(FEATURE_LEDDAR)) {
+        sensorsSet(SENSOR_LEDDAR); //sets the leddar sensor bit on the enabledsensors
+        }
+#endif
+*/
+
 #ifdef USE_ADC
     adcConfigMutable()->vbat.enabled = (batteryConfig()->voltageMeterSource == VOLTAGE_METER_ADC);
     adcConfigMutable()->current.enabled = (batteryConfig()->currentMeterSource == CURRENT_METER_ADC);
@@ -493,7 +502,6 @@ void init(void)
         dashboardInit();
     }
 #endif
-
 
 #ifdef GPS
     if (feature(FEATURE_GPS)) {
