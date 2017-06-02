@@ -42,7 +42,7 @@
 void leddarUpdate(timeUs_t currentTimeUs)
 {
     UNUSED(currentTimeUs);
-    //LED0_TOGGLE;
+    LED0_TOGGLE;
     //hcsr04_start_reading();
 }
 

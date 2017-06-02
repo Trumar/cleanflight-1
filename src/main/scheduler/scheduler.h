@@ -71,9 +71,9 @@ typedef enum {
 #ifdef BARO
     TASK_BARO,
 #endif
-//#ifdef LEDDAR
+#ifdef LEDDAR
     TASK_LEDDAR,
-//#endif
+#endif
 #ifdef SONAR
     TASK_SONAR,
 #endif

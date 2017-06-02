@@ -17,6 +17,7 @@
 
 #pragma once
 
+#define LEDDAR
 
 #if defined(RMDO)
 #define TARGET_BOARD_IDENTIFIER "RMDO"
@@ -114,8 +115,6 @@
 #define SONAR
 #define SONAR_TRIGGER_PIN       PB0
 #define SONAR_ECHO_PIN          PB1
-
-#define LEDDAR
 
 #define USE_BARO_MS5611
 #define USE_BARO_BMP085

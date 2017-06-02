@@ -193,15 +193,6 @@ static void taskUpdateBaro(timeUs_t currentTimeUs)
 }
 #endif
 
-//#ifdef LEDDAR
-static void taskLeddarUpdate(timeUs_t currentTimeUs)
-{
-    //LED0_TOGGLE;
-}
-//#endif
-
-
-
 //add LEDDAR here
 #if defined(BARO) || defined(SONAR)
 static void taskCalculateAltitude(timeUs_t currentTimeUs)
@@ -313,9 +304,9 @@ void fcTasksInit(void)
     setTaskEnabled(TASK_BARO, sensors(SENSOR_BARO));
 #endif
 ////////////
-//#ifdef LEDDAR
+#ifdef LEDDAR
     setTaskEnabled(TASK_LEDDAR, sensors(SENSOR_LEDDAR));
-//#endif
+#endif
 /////////
 #ifdef SONAR
     setTaskEnabled(TASK_SONAR, sensors(SENSOR_SONAR));
@@ -496,14 +487,14 @@ cfTask_t cfTasks[TASK_COUNT] = {
     },
 #endif
 
-//#ifdef LEDDAR
+#ifdef LEDDAR
     [TASK_LEDDAR] = {
         .taskName = "LEDDAR",
         .taskFunc = leddarUpdate,
-        .desiredPeriod = TASK_PERIOD_MS(100),
+        .desiredPeriod = TASK_PERIOD_MS(70),
         .staticPriority = TASK_PRIORITY_LOW,
     },
-//#endif
+#endif
 
 #ifdef SONAR
     [TASK_SONAR] = {

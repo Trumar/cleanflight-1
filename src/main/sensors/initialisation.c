@@ -78,11 +78,11 @@ bool sensorsAutodetect(void)
     }
 #endif
 
-//#ifdef LEDDAR
-//if (feature(FEATURE_LEDDAR)) {
+#ifdef LEDDAR
+if (feature(FEATURE_LEDDAR)) {
 	sensorsSet(SENSOR_LEDDAR);
-//}
-//#endif
+}
+#endif
 
     return true;
 }
