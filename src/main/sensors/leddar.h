@@ -23,3 +23,4 @@
 #include "sensors/battery.h"
 
 void leddarUpdate(timeUs_t currentTimeUs);
+bool leddarInit(void);

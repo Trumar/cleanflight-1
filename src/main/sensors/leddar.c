@@ -31,18 +31,65 @@
 #include "config/parameter_group_ids.h"
 
 #include "drivers/io.h"
+#include "drivers/light_led.h"
+#include "drivers/gpio.h"
+#include "drivers/serial.h"
+#include "drivers/serial_uart.h"
 
 #include "fc/runtime_config.h"
 
 #include "sensors/sensors.h"
 #include "sensors/battery.h"
+
 #include "drivers/light_led.h"
+
+#include "io/serial.h"
+
+
+static serialPort_t *leddarSensorPort = NULL;
+
+bool leddarInit(void)
+{
+
+    serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_RX_SERIAL);
+    if (!portConfig) {
+        return false;
+    }
+
+    portOptions_t options = (SERIAL_STOPBITS_1);
+
+    // Initialize serial port
+    leddarSensorPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, NULL, 115200, MODE_RXTX, options);
+
+    return leddarSensorPort != NULL;
+}
 
 
 void leddarUpdate(timeUs_t currentTimeUs)
 {
     UNUSED(currentTimeUs);
+
+    static int32_t calculatedAltitude = 0;
+    //Input: 0x01 0x04 0x00 0x14 0x00 0x0a 0x30 0x09
+    uint8_t input[] = {0x01, 0x04, 0x00, 0x14, 0x00, 0x0a, 0x30, 0x09};
+
+/* UART3 confirmed to be active point at this stage
+    if (leddarSensorPort->identifier == SERIAL_PORT_USART3){
+    	LED0_TOGGLE;
+    }
+    */
+
+    serialWrite(leddarSensorPort, *input);
     LED0_TOGGLE;
-    //hcsr04_start_reading();
+
+
+
+
+    //we want to use UART3, so the id is 2
+    /*leddarPort = openSerialPort(SERIAL_PORT_USART3, FUNCTION_RX_SERIAL, NULL,
+    	                                         115200, MODE_RXTX,
+    											 SERIAL_STOPBITS_1);
+*/
+
 }
 
