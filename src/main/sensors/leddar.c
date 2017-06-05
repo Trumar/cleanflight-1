@@ -51,15 +51,16 @@ static serialPort_t *leddarSensorPort = NULL;
 bool leddarInit(void)
 {
 
-    serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_RX_SERIAL);
+    serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_BLACKBOX);
     if (!portConfig) {
         return false;
     }
 
-    portOptions_t options = (SERIAL_STOPBITS_1);
+    portOptions_t options = SERIAL_PARITY_NO | SERIAL_STOPBITS_1 | SERIAL_NOT_INVERTED;
+    portMode_t mode = MODE_TX;
 
     // Initialize serial port
-    leddarSensorPort = openSerialPort(portConfig->identifier, FUNCTION_RX_SERIAL, NULL, 115200, MODE_RXTX, options);
+    leddarSensorPort = openSerialPort(portConfig->identifier, FUNCTION_BLACKBOX, NULL, 115200, mode, options);
 
     return leddarSensorPort != NULL;
 }
@@ -69,9 +70,9 @@ void leddarUpdate(timeUs_t currentTimeUs)
 {
     UNUSED(currentTimeUs);
 
-    static int32_t calculatedAltitude = 0;
-    //Input: 0x01 0x04 0x00 0x14 0x00 0x0a 0x30 0x09
-    uint8_t input[] = {0x01, 0x04, 0x00, 0x14, 0x00, 0x0a, 0x30, 0x09};
+    //static int32_t calculatedAltitude = 0;
+    //uint8_t input[] = {0x01, 0x04, 0x00, 0x14, 0x00, 0x0a, 0x30, 0x09};
+    static const uint8_t input[] = {0x01};
 
 /* UART3 confirmed to be active point at this stage
     if (leddarSensorPort->identifier == SERIAL_PORT_USART3){
@@ -81,9 +82,6 @@ void leddarUpdate(timeUs_t currentTimeUs)
 
     serialWrite(leddarSensorPort, *input);
     LED0_TOGGLE;
-
-
-
 
     //we want to use UART3, so the id is 2
     /*leddarPort = openSerialPort(SERIAL_PORT_USART3, FUNCTION_RX_SERIAL, NULL,
