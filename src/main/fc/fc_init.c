@@ -530,6 +530,13 @@ void init(void)
     }
 #endif
 
+#ifdef LEDDAR
+    if (feature(FEATURE_LEDDAR)){
+    	leddarInit();
+    }
+#endif
+
+
 #ifdef USB_DETECT_PIN
     usbCableDetectInit();
 #endif

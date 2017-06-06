@@ -37,8 +37,8 @@
 #include "drivers/io.h"
 #include "drivers/light_led.h"
 #include "drivers/gpio.h"
-#include "drivers/serial.h"
-#include "drivers/serial_uart.h"
+//#include "drivers/serial.h"
+//#include "drivers/serial_uart.h"
 
 #include "fc/runtime_config.h"
 
@@ -50,54 +50,33 @@
 #include "io/serial.h"
 
 
-static serialPort_t *leddarSensorPort = NULL;
+serialPort_t *leddarSensorPort;
 
-bool leddarInit(void)
+void leddarInit(void)
 {
-
-    serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_BLACKBOX);
-    if (!portConfig) {
-        return false;
-    }
-
-    portOptions_t options = SERIAL_PARITY_NO | SERIAL_STOPBITS_1 | SERIAL_NOT_INVERTED;
-    portMode_t mode = MODE_TX;
+    portOptions_t options = SERIAL_PARITY_NO | SERIAL_STOPBITS_1;// | SERIAL_NOT_INVERTED;
+    portMode_t mode = MODE_RXTX;
 
     // Initialize serial port
-    leddarSensorPort = openSerialPort(portConfig->identifier, FUNCTION_BLACKBOX, NULL, 115200, mode, options);
+    leddarSensorPort = openSerialPort(SERIAL_PORT_USART2, FUNCTION_LEDDAR, NULL, 115200, mode, options);
 
-    return leddarSensorPort != NULL;
+    serialPortUsage_t *serialPortUsage = findSerialPortUsageByIdentifier(SERIAL_PORT_USART2);
 }
-
 
 void leddarUpdate(timeUs_t currentTimeUs)
 {
     UNUSED(currentTimeUs);
 
     //static int32_t calculatedAltitude = 0;
-    //uint8_t input[] = {0x01, 0x04, 0x00, 0x14, 0x00, 0x0a, 0x30, 0x09};
-    //static const uint8_t input[] = {0x01};
+    uint8_t input[] = {0x01, 0x04, 0x00, 0x14, 0x00, 0x0a, 0x30, 0x09};
 
- //UART3 confirmed to be active point at this stage
-    if (leddarSensorPort->baudRate == 115200){
-    	debug[0] = 1;
-    }else{
-    	debug[0] = -1;
+    /*Write the input bytes to the LEDDAR sensor to retrieve samples
+     * This does not work on UART3 for some reason...*/
+    int i;
+    for (i = 0; i < 8; i++){
+    	serialWrite(leddarSensorPort, input[i]);
     }
 
-
-    /*This causes the board to hang on reboot*/
-    //blackboxWrite('I');
-
-    /*This seems to do nothing!*/
-    serialWrite(leddarSensorPort, 'I');
-    LED0_TOGGLE;
-
-    //we want to use UART3, so the id is 2
-    /*leddarPort = openSerialPort(SERIAL_PORT_USART3, FUNCTION_RX_SERIAL, NULL,
-    	                                         115200, MODE_RXTX,
-    											 SERIAL_STOPBITS_1);
-*/
-
+    //LED0_TOGGLE;
 }
 

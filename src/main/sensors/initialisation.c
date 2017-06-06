@@ -81,7 +81,6 @@ bool sensorsAutodetect(void)
 #ifdef LEDDAR
 if (feature(FEATURE_LEDDAR)) {
 	sensorsSet(SENSOR_LEDDAR);
-	leddarInit();
 }
 #endif
 
