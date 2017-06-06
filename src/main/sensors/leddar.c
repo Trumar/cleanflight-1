@@ -22,6 +22,10 @@
 #include "platform.h"
 
 #include "build/build_config.h"
+#include "build/debug.h"
+
+#include "blackbox/blackbox.h"
+#include "blackbox/blackbox_io.h"
 
 #include "common/maths.h"
 #include "common/utils.h"
@@ -72,15 +76,21 @@ void leddarUpdate(timeUs_t currentTimeUs)
 
     //static int32_t calculatedAltitude = 0;
     //uint8_t input[] = {0x01, 0x04, 0x00, 0x14, 0x00, 0x0a, 0x30, 0x09};
-    static const uint8_t input[] = {0x01};
+    //static const uint8_t input[] = {0x01};
 
-/* UART3 confirmed to be active point at this stage
-    if (leddarSensorPort->identifier == SERIAL_PORT_USART3){
-    	LED0_TOGGLE;
+ //UART3 confirmed to be active point at this stage
+    if (leddarSensorPort->baudRate == 115200){
+    	debug[0] = 1;
+    }else{
+    	debug[0] = -1;
     }
-    */
 
-    serialWrite(leddarSensorPort, *input);
+
+    /*This causes the board to hang on reboot*/
+    //blackboxWrite('I');
+
+    /*This seems to do nothing!*/
+    serialWrite(leddarSensorPort, 'I');
     LED0_TOGGLE;
 
     //we want to use UART3, so the id is 2
