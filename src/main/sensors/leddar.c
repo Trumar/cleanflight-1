@@ -60,7 +60,7 @@ void leddarInit(void)
     serialPortIdentifier_e port = SERIAL_PORT_USART2;
 
     // Initialize serial port
-    leddarSensorPort = openSerialPort(port, FUNCTION_LEDDAR, NULL, 115200, mode, options); //57600
+    leddarSensorPort = openSerialPort(port, FUNCTION_LEDDAR, NULL, 57600, mode, options); //57600
 
     //serialPortUsage_t *serialPortUsage = findSerialPortUsageByIdentifier(SERIAL_PORT_USART2);
 }
@@ -97,9 +97,9 @@ void leddarUpdate(timeUs_t currentTimeUs)
     }
 
 //displays in distance in mm
-    if ((sensorSample[12] | sensorSample[11] << 8) > 0 ){ //remove some erroneous sensor dips to 0 mm
+//    if ((sensorSample[12] | sensorSample[11] << 8) > 0 ){ //remove some erroneous sensor dips to 0 mm
     	distance = sensorSample[12] | sensorSample[11] << 8;
-    }
+//    }
 
    	debug[0] = distance;
 
