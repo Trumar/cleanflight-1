@@ -107,6 +107,7 @@ static void applyMultirotorAltHold(void)
         }
         rcCommand[THROTTLE] = constrain(initialThrottleHold + altHoldThrottleAdjustment, PWM_RANGE_MIN, PWM_RANGE_MAX);
     }
+
 }
 
 static void applyFixedWingAltHold(void)
@@ -190,6 +191,7 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     if (!velocityControl) {
         error = constrain(AltHold - estimatedAltitude, -500, 500);
         error = applyDeadband(error, 10); // remove small P parameter to reduce noise near zero position
+        debug[2] = error;
         setVel = constrain((currentPidProfile->pid[PID_ALT].P * error / 128), -300, +300); // limit velocity to +/- 3 m/s
     } else {
         setVel = setVelocity;
@@ -207,6 +209,8 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
 
     // D
     result -= constrain(currentPidProfile->pid[PID_VEL].D * (accZ_tmp + accZ_old) / 512, -150, 150);
+
+
 
     return result;
 }
@@ -308,8 +312,11 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     static float accZ_old = 0.0f;
     altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustment(vel_tmp, accZ_tmp, accZ_old);
     accZ_old = accZ_tmp;
+
+    debug[1] = altHoldThrottleAdjustment;
+
 }
-#endif // defined(BARO) || defined(SONAR)
+#endif // defined(BARO) || defined(SONAR) || defined(LEDDAR)
 
 int32_t getEstimatedAltitude(void)
 {
