@@ -37,6 +37,7 @@
 #include "drivers/io.h"
 #include "drivers/light_led.h"
 #include "drivers/gpio.h"
+#include "drivers/system.h"
 //#include "drivers/serial.h"
 //#include "drivers/serial_uart.h"
 
@@ -56,27 +57,51 @@ void leddarInit(void)
 {
     portOptions_t options = SERIAL_PARITY_NO | SERIAL_STOPBITS_1;// | SERIAL_NOT_INVERTED;
     portMode_t mode = MODE_RXTX;
+    serialPortIdentifier_e port = SERIAL_PORT_USART2;
 
     // Initialize serial port
-    leddarSensorPort = openSerialPort(SERIAL_PORT_USART2, FUNCTION_LEDDAR, NULL, 115200, mode, options);
+    leddarSensorPort = openSerialPort(port, FUNCTION_LEDDAR, NULL, 115200, mode, options); //57600
 
-    serialPortUsage_t *serialPortUsage = findSerialPortUsageByIdentifier(SERIAL_PORT_USART2);
+    //serialPortUsage_t *serialPortUsage = findSerialPortUsageByIdentifier(SERIAL_PORT_USART2);
 }
 
 void leddarUpdate(timeUs_t currentTimeUs)
 {
     UNUSED(currentTimeUs);
+    uint8_t receivedByte = 0;//[3] = {0x00, 0x00, 0x00};
+    uint8_t sensorSample[25] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    uint16_t distance = 0;
 
-    //static int32_t calculatedAltitude = 0;
+    /* SERIAL WRITE SECTION (SEND DATA TO LEDDAR SENSOR)*/
     uint8_t input[] = {0x01, 0x04, 0x00, 0x14, 0x00, 0x0a, 0x30, 0x09};
 
-    /*Write the input bytes to the LEDDAR sensor to retrieve samples
-     * This does not work on UART3 for some reason...*/
+    //Write the input bytes to the LEDDAR sensor to retrieve samples
+    // This does not work on UART3 for some reason...
     int i;
     for (i = 0; i < 8; i++){
     	serialWrite(leddarSensorPort, input[i]);
     }
 
-    //LED0_TOGGLE;
+    /*SERIAL READ SECTION */
+    //Sample format (of interest is 05C2) -> byte locations [11] and [12]
+    //01 04 14 C9 D6 00 2D 26 CC 00 01 05 C2 48 87 00 00 00 00 00 00 00 00 CE DA
+    //0x01 0x04 0x14 0xC9 0xD6 0x00 0x2D 0x26 0xCC 0x00 0x01 0x05 0xC2 0x48 0x87 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0xCE 0xDA
+    i = 0;
+    while (serialRxBytesWaiting(leddarSensorPort) > 0){
+    	receivedByte = serialRead(leddarSensorPort);
+    	//serialWrite(leddarSensorPort, receivedByte);
+
+    	sensorSample[i] = receivedByte;
+    	i++;
+    }
+
+//displays in distance in mm
+    if ((sensorSample[12] | sensorSample[11] << 8) > 0 ){ //remove some erroneous sensor dips to 0 mm
+    	distance = sensorSample[12] | sensorSample[11] << 8;
+    }
+
+   	debug[0] = distance;
+
 }
 
