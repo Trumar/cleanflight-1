@@ -44,14 +44,14 @@
 #include "sensors/sensors.h"
 #include "sensors/barometer.h"
 #include "sensors/sonar.h"
-
+#include "sensors/leddar.h"
 
 int32_t AltHold;
 static int32_t estimatedVario = 0;                      // variometer in cm/s
 static int32_t estimatedAltitude = 0;                // in cm
 
 
-#if defined(BARO) || defined(SONAR)
+#if defined(BARO) || defined(SONAR) || defined(LEDDAR)
 
 enum {
     DEBUG_ALTITUDE_ACC,
@@ -130,6 +130,7 @@ void applyAltHold(void)
 void updateAltHoldState(void)
 {
     // Baro alt hold activate
+	/*
     if (!IS_RC_MODE_ACTIVE(BOXBARO)) {
         DISABLE_FLIGHT_MODE(BARO_MODE);
         return;
@@ -142,6 +143,14 @@ void updateAltHoldState(void)
         errorVelocityI = 0;
         altHoldThrottleAdjustment = 0;
     }
+*/
+    if (!FLIGHT_MODE(LEDDAR_MODE)) {
+           ENABLE_FLIGHT_MODE(LEDDAR_MODE);
+           AltHold = estimatedAltitude;
+           initialThrottleHold = rcData[THROTTLE];
+           errorVelocityI = 0;
+           altHoldThrottleAdjustment = 0;
+       }
 }
 
 void updateSonarAltHoldState(void)
@@ -237,6 +246,13 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
             sonarAlt = (float)sonarAlt * sonarTransition + baroAlt * (1.0f - sonarTransition);
             estimatedAltitude = sonarAlt;
         }
+    }
+#endif
+
+#ifdef LEDDAR
+    if (sensors(SENSOR_LEDDAR)){
+    	estimatedAltitude = getLeddarAlt();
+    	debug[0] = estimatedAltitude;
     }
 #endif
 

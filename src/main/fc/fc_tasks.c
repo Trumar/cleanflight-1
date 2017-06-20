@@ -162,6 +162,12 @@ static void taskUpdateRxMain(timeUs_t currentTimeUs)
     }
 #endif
 
+#ifdef LEDDAR
+    if (sensors(SENSOR_LEDDAR)) {
+        updateAltHoldState();
+    }
+#endif
+
 #ifdef SONAR
     if (sensors(SENSOR_SONAR)) {
         updateSonarAltHoldState();
@@ -194,7 +200,7 @@ static void taskUpdateBaro(timeUs_t currentTimeUs)
 #endif
 
 //add LEDDAR here
-#if defined(BARO) || defined(SONAR)
+#if defined(BARO) || defined(SONAR) || defined(LEDDAR)
 static void taskCalculateAltitude(timeUs_t currentTimeUs)
 {
     if (false
@@ -203,6 +209,9 @@ static void taskCalculateAltitude(timeUs_t currentTimeUs)
 #endif
 #if defined(SONAR)
         || sensors(SENSOR_SONAR)
+#endif
+#if defined(LEDDAR)
+        || sensors(SENSOR_LEDDAR)
 #endif
         ) {
         calculateEstimatedAltitude(currentTimeUs);
@@ -311,8 +320,8 @@ void fcTasksInit(void)
 #ifdef SONAR
     setTaskEnabled(TASK_SONAR, sensors(SENSOR_SONAR));
 #endif
-#if defined(BARO) || defined(SONAR)
-    setTaskEnabled(TASK_ALTITUDE, sensors(SENSOR_BARO) || sensors(SENSOR_SONAR));
+#if defined(BARO) || defined(SONAR) || defined(LEDDAR)
+    setTaskEnabled(TASK_ALTITUDE, sensors(SENSOR_BARO) || sensors(SENSOR_SONAR) || sensors(SENSOR_LEDDAR));
 #endif
 #ifdef USE_DASHBOARD
     setTaskEnabled(TASK_DASHBOARD, feature(FEATURE_DASHBOARD));
@@ -507,7 +516,7 @@ cfTask_t cfTasks[TASK_COUNT] = {
 
 
 //NEED TO add LEDDAR to this
-#if defined(BARO) || defined(SONAR)
+#if defined(BARO) || defined(SONAR) || defined(LEDDAR)
     [TASK_ALTITUDE] = {
         .taskName = "ALTITUDE",
         .taskFunc = taskCalculateAltitude,

@@ -52,6 +52,7 @@
 
 
 serialPort_t *leddarSensorPort;
+uint16_t distance;
 
 void leddarInit(void)
 {
@@ -65,13 +66,17 @@ void leddarInit(void)
     //serialPortUsage_t *serialPortUsage = findSerialPortUsageByIdentifier(SERIAL_PORT_USART2);
 }
 
+uint16_t getLeddarAlt(){
+	return distance;
+}
+
 void leddarUpdate(timeUs_t currentTimeUs)
 {
     UNUSED(currentTimeUs);
     uint8_t receivedByte = 0;//[3] = {0x00, 0x00, 0x00};
     uint8_t sensorSample[25] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    uint16_t distance = 0;
+    distance = 0;
 
     /* SERIAL WRITE SECTION (SEND DATA TO LEDDAR SENSOR)*/
     uint8_t input[] = {0x01, 0x04, 0x00, 0x14, 0x00, 0x0a, 0x30, 0x09};
@@ -96,12 +101,11 @@ void leddarUpdate(timeUs_t currentTimeUs)
     	i++;
     }
 
-//displays in distance in mm
-//    if ((sensorSample[12] | sensorSample[11] << 8) > 0 ){ //remove some erroneous sensor dips to 0 mm
+//displays in distance in cm
     	distance = sensorSample[12] | sensorSample[11] << 8;
-//    }
+    	distance = distance/10;
 
-   	debug[0] = distance;
+   	//debug[0] = distance;
 
 }
 

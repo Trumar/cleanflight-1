@@ -373,7 +373,7 @@ void writeServos(void)
 STATIC_UNIT_TESTED void servoMixer(void)
 {
     int16_t input[INPUT_SOURCE_COUNT]; // Range [-500:+500]
-    static int16_t currentOutput[MAX_SERVO_RULES];
+    //static int16_t currentOutput[MAX_SERVO_RULES];
     uint8_t i;
 
     if (FLIGHT_MODE(PASSTHRU_MODE)) {
@@ -417,6 +417,7 @@ STATIC_UNIT_TESTED void servoMixer(void)
         servo[i] = 0;
 
     // mix servos according to rules
+    /*
     for (i = 0; i < servoRuleCount; i++) {
         // consider rule if no box assigned or box is active
         if (currentServoMixer[i].box == 0 || IS_RC_MODE_ACTIVE(BOXSERVO1 + currentServoMixer[i].box - 1)) {
@@ -440,6 +441,7 @@ STATIC_UNIT_TESTED void servoMixer(void)
             currentOutput[i] = 0;
         }
     }
+*/
 
     for (i = 0; i < MAX_SUPPORTED_SERVOS; i++) {
         servo[i] = ((int32_t)servoParams(i)->rate * servo[i]) / 100L;

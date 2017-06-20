@@ -24,3 +24,4 @@
 
 bool leddarInit(void);
 void leddarUpdate(timeUs_t currentTimeUs);
+uint16_t getLeddarAlt();
