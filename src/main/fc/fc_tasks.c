@@ -150,7 +150,7 @@ static void taskUpdateRxMain(timeUs_t currentTimeUs)
     processRx(currentTimeUs);
     isRXDataNew = true;
 
-#if !defined(BARO) && !defined(SONAR)
+#if !defined(BARO) && !defined(SONAR) && !defined(LEDDAR)
     // updateRcCommands sets rcCommand, which is needed by updateAltHoldState and updateSonarAltHoldState
     updateRcCommands();
 #endif

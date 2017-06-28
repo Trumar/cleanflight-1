@@ -145,6 +145,12 @@ void updateAltHoldState(void)
         altHoldThrottleAdjustment = 0;
     }
 */
+    // LEDDAR alt hold activate
+    if (!IS_RC_MODE_ACTIVE(BOXLEDDAR)) {
+        DISABLE_FLIGHT_MODE(LEDDAR_MODE);
+        return;
+    }
+
     if (!FLIGHT_MODE(LEDDAR_MODE)) {
            ENABLE_FLIGHT_MODE(LEDDAR_MODE);
            AltHold = estimatedAltitude;
@@ -191,7 +197,7 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     if (!velocityControl) {
         error = constrain(AltHold - estimatedAltitude, -500, 500);
         error = applyDeadband(error, 10); // remove small P parameter to reduce noise near zero position
-        debug[2] = error;
+        //debug[2] = error;
         setVel = constrain((currentPidProfile->pid[PID_ALT].P * error / 128), -300, +300); // limit velocity to +/- 3 m/s
     } else {
         setVel = setVelocity;
@@ -313,7 +319,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustment(vel_tmp, accZ_tmp, accZ_old);
     accZ_old = accZ_tmp;
 
-    debug[1] = altHoldThrottleAdjustment;
+    //debug[1] = altHoldThrottleAdjustment;
 
 }
 #endif // defined(BARO) || defined(SONAR) || defined(LEDDAR)
