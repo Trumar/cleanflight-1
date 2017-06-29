@@ -164,7 +164,7 @@ static void taskUpdateRxMain(timeUs_t currentTimeUs)
 
 #ifdef LEDDAR
     if (sensors(SENSOR_LEDDAR)) {
-        updateAltHoldState();
+        updateLeddarAltHoldState();
     }
 #endif
 
@@ -500,7 +500,7 @@ cfTask_t cfTasks[TASK_COUNT] = {
     [TASK_LEDDAR] = {
         .taskName = "LEDDAR",
         .taskFunc = leddarUpdate,
-        .desiredPeriod = TASK_PERIOD_MS(500),
+        .desiredPeriod = TASK_PERIOD_MS(70),
         .staticPriority = TASK_PRIORITY_LOW,
     },
 #endif

@@ -131,7 +131,7 @@ void applyAltHold(void)
 void updateAltHoldState(void)
 {
     // Baro alt hold activate
-	/*
+
     if (!IS_RC_MODE_ACTIVE(BOXBARO)) {
         DISABLE_FLIGHT_MODE(BARO_MODE);
         return;
@@ -144,8 +144,11 @@ void updateAltHoldState(void)
         errorVelocityI = 0;
         altHoldThrottleAdjustment = 0;
     }
-*/
-    // LEDDAR alt hold activate
+}
+
+void updateLeddarAltHoldState(void){
+
+	// LEDDAR alt hold activate
     if (!IS_RC_MODE_ACTIVE(BOXLEDDAR)) {
         DISABLE_FLIGHT_MODE(LEDDAR_MODE);
         return;
@@ -154,11 +157,13 @@ void updateAltHoldState(void)
     if (!FLIGHT_MODE(LEDDAR_MODE)) {
            ENABLE_FLIGHT_MODE(LEDDAR_MODE);
            AltHold = estimatedAltitude;
+           debug[1] = AltHold;
            initialThrottleHold = rcData[THROTTLE];
            errorVelocityI = 0;
            altHoldThrottleAdjustment = 0;
        }
 }
+
 
 void updateSonarAltHoldState(void)
 {
@@ -258,14 +263,6 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
         }
     }
 #endif
-
-#ifdef LEDDAR
-    if (sensors(SENSOR_LEDDAR)){
-    	estimatedAltitude = getLeddarAlt();
-    	debug[0] = estimatedAltitude;
-    }
-#endif
-
     float accZ_tmp = 0;
 #ifdef ACC
     if (sensors(SENSOR_ACC)) {
@@ -319,7 +316,12 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustment(vel_tmp, accZ_tmp, accZ_old);
     accZ_old = accZ_tmp;
 
-    //debug[1] = altHoldThrottleAdjustment;
+#ifdef LEDDAR
+    if (sensors(SENSOR_LEDDAR)){
+    	estimatedAltitude = getLeddarAlt();
+    	debug[0] = estimatedAltitude;
+    }
+#endif
 
 }
 #endif // defined(BARO) || defined(SONAR) || defined(LEDDAR)

@@ -33,4 +33,5 @@ int32_t getEstimatedVario(void);
 
 void applyAltHold(void);
 void updateAltHoldState(void);
+void updateLeddarAltHoldState(void);
 void updateSonarAltHoldState(void);

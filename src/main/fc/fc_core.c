@@ -512,7 +512,7 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
 
     //need to add LEDDAR here
 #if defined(BARO) || defined(SONAR) || defined(LEDDAR)
-    // updateRcCommands sets rcCommand, which is needed by updateAltHoldState and updateSonarAltHoldState
+    // updateRcCommands sets rcCommand, which is needed by updateAltHoldState, updateLeddarAltHoldState, and updateSonarAltHoldState
     updateRcCommands();
     if (sensors(SENSOR_BARO) || sensors(SENSOR_SONAR) || sensors(SENSOR_LEDDAR)) {
         if (FLIGHT_MODE(BARO_MODE) || FLIGHT_MODE(SONAR_MODE) || FLIGHT_MODE(LEDDAR_MODE)) {
