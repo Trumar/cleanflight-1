@@ -56,7 +56,8 @@ static int32_t estimatedAltitude = 0;                // in cm
 enum {
     DEBUG_ALTITUDE_ACC,
     DEBUG_ALTITUDE_VEL,
-    DEBUG_ALTITUDE_HEIGHT
+    DEBUG_ALTITUDE_HEIGHT,
+	DEBUG_ALTITUDE_LEDDAR
 };
 
 PG_REGISTER_WITH_RESET_TEMPLATE(airplaneConfig_t, airplaneConfig, PG_AIRPLANE_CONFIG, 0);
@@ -157,7 +158,7 @@ void updateLeddarAltHoldState(void){
     if (!FLIGHT_MODE(LEDDAR_MODE)) {
            ENABLE_FLIGHT_MODE(LEDDAR_MODE);
            AltHold = estimatedAltitude;
-           debug[1] = AltHold;
+           //debug[1] = AltHold;
            initialThrottleHold = rcData[THROTTLE];
            errorVelocityI = 0;
            altHoldThrottleAdjustment = 0;
@@ -196,7 +197,7 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     if (!isThrustFacingDownwards(&attitude)) {
         return result;
     }
-
+    DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_LEDDAR, estimatedAltitude);
     // Altitude P-Controller
 
     if (!velocityControl) {
@@ -286,6 +287,8 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_VEL, vel);
     DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_HEIGHT, accAlt);
 
+
+
     imuResetAccelerationSum();
 
     int32_t baroVel = 0;
@@ -304,6 +307,12 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     }
 #endif // BARO
 
+#ifdef LEDDAR
+    if (sensors(SENSOR_LEDDAR)){
+    	estimatedAltitude = getLeddarAlt();
+    }
+#endif
+
     // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity).
     // By using CF it's possible to correct the drift of integrated accZ (velocity) without loosing the phase, i.e without delay
     vel = vel * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel) + baroVel * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel));
@@ -316,12 +325,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustment(vel_tmp, accZ_tmp, accZ_old);
     accZ_old = accZ_tmp;
 
-#ifdef LEDDAR
-    if (sensors(SENSOR_LEDDAR)){
-    	estimatedAltitude = getLeddarAlt();
-    	debug[0] = estimatedAltitude;
-    }
-#endif
+
 
 }
 #endif // defined(BARO) || defined(SONAR) || defined(LEDDAR)

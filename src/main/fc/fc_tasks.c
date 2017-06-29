@@ -500,7 +500,7 @@ cfTask_t cfTasks[TASK_COUNT] = {
     [TASK_LEDDAR] = {
         .taskName = "LEDDAR",
         .taskFunc = leddarUpdate,
-        .desiredPeriod = TASK_PERIOD_MS(70),
+        .desiredPeriod = TASK_PERIOD_MS(150),
         .staticPriority = TASK_PRIORITY_LOW,
     },
 #endif
