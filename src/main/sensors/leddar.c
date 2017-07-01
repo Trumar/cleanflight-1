@@ -105,6 +105,8 @@ void leddarUpdate(timeUs_t currentTimeUs)
     	distance = sensorSample[12] | sensorSample[11] << 8;
     	distance = distance/10;
 
+    	//distance = distance + 20; //compensate for 5.5V source
+
    	//debug[0] = distance;
 
 }

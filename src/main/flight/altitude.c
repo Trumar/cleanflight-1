@@ -106,6 +106,8 @@ static void applyMultirotorAltHold(void)
             velocityControl = 0;
             isAltHoldChanged = 0;
         }
+
+
         rcCommand[THROTTLE] = constrain(initialThrottleHold + altHoldThrottleAdjustment, PWM_RANGE_MIN, PWM_RANGE_MAX);
     }
 
@@ -158,7 +160,6 @@ void updateLeddarAltHoldState(void){
     if (!FLIGHT_MODE(LEDDAR_MODE)) {
            ENABLE_FLIGHT_MODE(LEDDAR_MODE);
            AltHold = estimatedAltitude;
-           //debug[1] = AltHold;
            initialThrottleHold = rcData[THROTTLE];
            errorVelocityI = 0;
            altHoldThrottleAdjustment = 0;
@@ -197,34 +198,43 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     if (!isThrustFacingDownwards(&attitude)) {
         return result;
     }
-    DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_LEDDAR, estimatedAltitude);
+
     // Altitude P-Controller
 
     if (!velocityControl) {
+
+    	DEBUG_SET(DEBUG_ALTITUDE, 0, AltHold);
+        DEBUG_SET(DEBUG_ALTITUDE, 1, estimatedAltitude);
+
         error = constrain(AltHold - estimatedAltitude, -500, 500);
-        error = applyDeadband(error, 10); // remove small P parameter to reduce noise near zero position
-        //debug[2] = error;
+        //lowered constraint from 10, based on sensor readings (caused an initial jump in alt when enabling LEDDAR mode)
+        error = applyDeadband(error, 2); // remove small P parameter to reduce noise near zero position
         setVel = constrain((currentPidProfile->pid[PID_ALT].P * error / 128), -300, +300); // limit velocity to +/- 3 m/s
+
+
     } else {
         setVel = setVelocity;
     }
+
     // Velocity PID-Controller
 
     // P
     error = setVel - vel_tmp;
     result = constrain((currentPidProfile->pid[PID_VEL].P * error / 32), -300, +300);
+    DEBUG_SET(DEBUG_ALTITUDE, 2, error);
 
     // I
     errorVelocityI += (currentPidProfile->pid[PID_VEL].I * error);
     errorVelocityI = constrain(errorVelocityI, -(8192 * 200), (8192 * 200));
     result += errorVelocityI / 8192;     // I in range +/-200
 
+
+
     // D
     result -= constrain(currentPidProfile->pid[PID_VEL].D * (accZ_tmp + accZ_old) / 512, -150, 150);
 
-
-
-    return result;
+    DEBUG_SET(DEBUG_ALTITUDE, 3, result);
+    return result; //altHoldThrottleAdjustment
 }
 
 void calculateEstimatedAltitude(timeUs_t currentTimeUs)
@@ -283,9 +293,9 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     }
 #endif
 
-    DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_ACC, accSum[2] / accSumCount);
-    DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_VEL, vel);
-    DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_HEIGHT, accAlt);
+    //DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_ACC, accSum[2] / accSumCount);
+    //DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_VEL, vel);
+    //DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_HEIGHT, accAlt);
 
 
 
@@ -324,8 +334,6 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     static float accZ_old = 0.0f;
     altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustment(vel_tmp, accZ_tmp, accZ_old);
     accZ_old = accZ_tmp;
-
-
 
 }
 #endif // defined(BARO) || defined(SONAR) || defined(LEDDAR)
