@@ -52,17 +52,23 @@
 
 
 serialPort_t *leddarSensorPort;
+serialPort_t *leddarSensorPort2;
 uint16_t distance;
+uint16_t distance2;
 
 void leddarInit(void)
 {
     portOptions_t options = SERIAL_PARITY_NO | SERIAL_STOPBITS_1;// | SERIAL_NOT_INVERTED;
+
     portMode_t mode = MODE_RXTX;
+    portMode_t mode2 = MODE_RX;
+
     serialPortIdentifier_e port = SERIAL_PORT_USART2;
+    serialPortIdentifier_e port2 = SERIAL_PORT_USART3;
 
-    // Initialize serial port
-    leddarSensorPort = openSerialPort(port, FUNCTION_LEDDAR, NULL, 57600, mode, options); //57600
-
+    // Initialize serial ports
+    leddarSensorPort = openSerialPort(port, FUNCTION_LEDDAR, NULL, 57600, mode, options); //57600 baud rate
+    leddarSensorPort2 = openSerialPort(port2, FUNCTION_LEDDAR, NULL, 57600, mode2, options);
     //serialPortUsage_t *serialPortUsage = findSerialPortUsageByIdentifier(SERIAL_PORT_USART2);
 }
 
@@ -74,7 +80,11 @@ void leddarUpdate(timeUs_t currentTimeUs)
 {
     UNUSED(currentTimeUs);
     uint8_t receivedByte = 0;//[3] = {0x00, 0x00, 0x00};
+
     uint8_t sensorSample[25] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+    uint8_t sensorSample2[25] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     							0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     distance = 0;
 
@@ -101,13 +111,26 @@ void leddarUpdate(timeUs_t currentTimeUs)
     	i++;
     }
 
+    i = 0;
+    while (serialRxBytesWaiting(leddarSensorPort2) > 0){
+    	receivedByte = serialRead(leddarSensorPort2);
+    	//serialWrite(leddarSensorPort, receivedByte);
+
+    	sensorSample2[i] = receivedByte;
+    	i++;
+    }
+
+
 //displays in distance in cm
-    	distance = sensorSample[12] | sensorSample[11] << 8;
-    	distance = distance/10;
+    distance = sensorSample[12] | sensorSample[11] << 8;
+    distance = distance/10;
 
-    	//distance = distance + 20; //compensate for 5.5V source
+    //distance = distance + 20; //compensate for 5.5V source
+    distance2 = sensorSample2[12] | sensorSample2[11] << 8;
+    distance2 = distance2/10;
 
-   	//debug[0] = distance;
+   	debug[0] = distance;
+   	debug[1] = distance2;
 
 }
 
