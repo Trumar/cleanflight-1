@@ -36,10 +36,15 @@
 #include "io/serial.h"
 
 uint16_t wallDistance;
-int activeDistance = 140; //distance where the algorithm activates
-int targetDistance = 120; //target distance away from the object
-//int bufferRegion = 20; //range from the wall in which the quad will stay, +/- the targetDistance
+int activeDistance = 90; //distance where the algorithm activates
+int targetDistance = 60; //target distance away from the object
+//int errorDeadband = 25; //keeps quad within set region, limits oscillation to and from wall
+int errorP = 0;
+int errorI = 0;
 int error = 0;
+int correction = 0;
+int P = 1;
+int I = 20;
 
 void calculateEstimatedWall(timeUs_t currentTimeUs)
 {
@@ -55,22 +60,34 @@ void wallFollow(void){
 	if (wallDistance <= activeDistance){
 
 		error = wallDistance - targetDistance;
-		error = applyDeadband(error,5); //remove some error measurements <5
+		error = applyDeadband(error,3); //remove some error measurements < 3
 
-		if (wallDistance >= targetDistance){ //too far from wall
-			rcCommand[ROLL] = constrain(-error*2, -500, +500); //limit roll to [-500;+500]
-		}
-		else if (wallDistance < targetDistance) //too close to the wall
-		{
-			rcCommand[ROLL] = constrain(error*2 , -500, +500);
+		//only apply correction if needed
+		if (error != 0 ){
+			//if (wallDistance >= targetDistance){ //too far from wall
+				//P
+			correction = constrain(error/P, -10, 10);
+
+			DEBUG_SET(DEBUG_ESC_SENSOR, 1, correction);
+		//	}
+		//	else if (wallDistance < targetDistance) //too close to the wall
+		//	{
+
+		//	}
+
+			//I
+			errorI += (error/I);
+			errorI = constrain(errorI, -2, +2);
+			DEBUG_SET(DEBUG_ESC_SENSOR, 2, errorI);
+
+			correction -= errorI;
+
+			rcCommand[ROLL] = constrain(correction, -500, +500); //limit roll to [-500;+500]
 		}
 	}
-	//else if (wallDistance < 0){ //negative sensor readings (inaccurate)
-	//		rcCommand[ROLL] = constrain(-45 , -500, +500); //too close to wall, get away from it to get accurate reading
-	//}
 
 DEBUG_SET(DEBUG_ESC_SENSOR, 0, wallDistance);
-DEBUG_SET(DEBUG_ESC_SENSOR, 1, rcCommand[ROLL]);
+
 
 
 }

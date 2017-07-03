@@ -206,6 +206,8 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     	DEBUG_SET(DEBUG_ALTITUDE, 0, AltHold);
         DEBUG_SET(DEBUG_ALTITUDE, 1, estimatedAltitude);
 
+        DEBUG_SET(DEBUG_ESC_SENSOR, 3, estimatedAltitude);
+
         error = constrain(AltHold - estimatedAltitude, -500, 500);
         //lowered constraint from 10, based on sensor readings (caused an initial jump in alt when enabling LEDDAR mode)
         error = applyDeadband(error, 2); // remove small P parameter to reduce noise near zero position
