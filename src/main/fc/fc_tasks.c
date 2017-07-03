@@ -507,7 +507,7 @@ cfTask_t cfTasks[TASK_COUNT] = {
     },
 	[TASK_WALL] = {
 	        .taskName = "WALL",
-	        .taskFunc = leddarWall,
+	        .taskFunc = calculateEstimatedWall,
 	        .desiredPeriod = TASK_PERIOD_MS(150),
 	        .staticPriority = TASK_PRIORITY_LOW,
 	    },

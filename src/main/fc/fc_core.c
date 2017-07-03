@@ -72,6 +72,7 @@
 #include "telemetry/telemetry.h"
 
 #include "flight/altitude.h"
+#include "flight/wall.h"
 #include "flight/failsafe.h"
 #include "flight/imu.h"
 #include "flight/mixer.h"
@@ -517,6 +518,7 @@ static void subTaskMainSubprocesses(timeUs_t currentTimeUs)
     if (sensors(SENSOR_BARO) || sensors(SENSOR_SONAR) || sensors(SENSOR_LEDDAR)) {
         if (FLIGHT_MODE(BARO_MODE) || FLIGHT_MODE(SONAR_MODE) || FLIGHT_MODE(LEDDAR_MODE)) {
             applyAltHold();
+            wallFollow();
         }
     }
 #endif

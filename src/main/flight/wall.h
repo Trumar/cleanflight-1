@@ -5,4 +5,5 @@
 #include "drivers/sonar_hcsr04.h"
 #include "sensors/battery.h"
 
-void leddarWall(timeUs_t currentTimeUs);
+void calculateEstimatedWall(timeUs_t currentTimeUs);
+void wallFollow(void);
