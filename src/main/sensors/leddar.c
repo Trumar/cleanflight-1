@@ -38,8 +38,6 @@
 #include "drivers/light_led.h"
 #include "drivers/gpio.h"
 #include "drivers/system.h"
-//#include "drivers/serial.h"
-//#include "drivers/serial_uart.h"
 
 #include "fc/runtime_config.h"
 
@@ -74,6 +72,10 @@ void leddarInit(void)
 
 uint16_t getLeddarAlt(){
 	return distance;
+}
+
+uint16_t getLeddarWall(){
+	return distance2;
 }
 
 void leddarUpdate(timeUs_t currentTimeUs)
@@ -120,7 +122,6 @@ void leddarUpdate(timeUs_t currentTimeUs)
     	i++;
     }
 
-
 //displays in distance in cm
     distance = sensorSample[12] | sensorSample[11] << 8;
     distance = distance/10;
@@ -131,6 +132,4 @@ void leddarUpdate(timeUs_t currentTimeUs)
 
    	//debug[0] = distance;
    	//debug[1] = distance2;
-
 }
-

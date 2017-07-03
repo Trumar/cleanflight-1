@@ -54,6 +54,7 @@
 #include "fc/fc_dispatch.h"
 
 #include "flight/altitude.h"
+#include "flight/wall.h"
 #include "flight/imu.h"
 #include "flight/mixer.h"
 #include "flight/pid.h"
@@ -315,6 +316,7 @@ void fcTasksInit(void)
 ////////////
 #ifdef LEDDAR
     setTaskEnabled(TASK_LEDDAR, sensors(SENSOR_LEDDAR));
+    setTaskEnabled(TASK_WALL, sensors(SENSOR_LEDDAR));
 #endif
 /////////
 #ifdef SONAR
@@ -503,6 +505,12 @@ cfTask_t cfTasks[TASK_COUNT] = {
         .desiredPeriod = TASK_PERIOD_MS(150),
         .staticPriority = TASK_PRIORITY_LOW,
     },
+	[TASK_WALL] = {
+	        .taskName = "WALL",
+	        .taskFunc = leddarWall,
+	        .desiredPeriod = TASK_PERIOD_MS(150),
+	        .staticPriority = TASK_PRIORITY_LOW,
+	    },
 #endif
 
 #ifdef SONAR

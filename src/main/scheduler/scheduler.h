@@ -73,11 +73,11 @@ typedef enum {
 #endif
 #ifdef LEDDAR
     TASK_LEDDAR,
+	TASK_WALL,
 #endif
 #ifdef SONAR
     TASK_SONAR,
 #endif
-	//add LEDDAR to this
 #if defined(BARO) || defined(SONAR)
     TASK_ALTITUDE,
 #endif
