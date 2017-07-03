@@ -129,8 +129,8 @@ void leddarUpdate(timeUs_t currentTimeUs)
     distance2 = sensorSample2[12] | sensorSample2[11] << 8;
     distance2 = (distance2/10)-380; //380 cm offset for this sensor for whatever reason...
 
-   	debug[0] = distance;
-   	debug[1] = distance2;
+   	//debug[0] = distance;
+   	//debug[1] = distance2;
 
 }
 
