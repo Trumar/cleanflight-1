@@ -523,7 +523,6 @@ cfTask_t cfTasks[TASK_COUNT] = {
 #endif
 
 
-//NEED TO add LEDDAR to this
 #if defined(BARO) || defined(SONAR) || defined(LEDDAR)
     [TASK_ALTITUDE] = {
         .taskName = "ALTITUDE",

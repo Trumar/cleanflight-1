@@ -43,8 +43,8 @@ int errorP = 0;
 int errorI = 0;
 int error = 0;
 int correction = 0;
-int P = 1;
-int I = 20;
+int P = 6;
+int I = 10;
 
 void calculateEstimatedWall(timeUs_t currentTimeUs)
 {
@@ -80,7 +80,7 @@ void wallFollow(void){
 			errorI = constrain(errorI, -2, +2);
 			DEBUG_SET(DEBUG_ESC_SENSOR, 2, errorI);
 
-			correction -= errorI;
+			correction += errorI;
 
 			rcCommand[ROLL] = constrain(correction, -500, +500); //limit roll to [-500;+500]
 		}
