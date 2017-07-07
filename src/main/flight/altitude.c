@@ -203,10 +203,8 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
 
     if (!velocityControl) {
 
-    	//DEBUG_SET(DEBUG_ALTITUDE, 0, AltHold);
-        DEBUG_SET(DEBUG_ALTITUDE, 0, estimatedAltitude);
-
-        DEBUG_SET(DEBUG_ESC_SENSOR, 3, estimatedAltitude);
+    	DEBUG_SET(DEBUG_ALTITUDE, 0, AltHold);
+        DEBUG_SET(DEBUG_ALTITUDE, 1, estimatedAltitude);
 
         error = constrain(AltHold - estimatedAltitude, -500, 500);
         error = applyDeadband(error, 2); // remove small P parameter to reduce noise near zero position
@@ -222,20 +220,17 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     // P
     error = setVel - vel_tmp;
     result = constrain((currentPidProfile->pid[PID_VEL].P * error / 32), -300, +300);
-    DEBUG_SET(DEBUG_ALTITUDE, 1, result);
 
     // I
     errorVelocityI += (currentPidProfile->pid[PID_VEL].I * error);
     errorVelocityI = constrain(errorVelocityI, -(8192 * 200), (8192 * 200));
     result += errorVelocityI / 8192;     // I in range +/-200
-    DEBUG_SET(DEBUG_ALTITUDE, 2, errorVelocityI / 8192);
-
 
     // D
     result -= constrain(currentPidProfile->pid[PID_VEL].D * (accZ_tmp + accZ_old) / 512, -150, 150);
-    DEBUG_SET(DEBUG_ALTITUDE, 3, (accZ_tmp + accZ_old) / 512);
 
     return result; //altHoldThrottleAdjustment
+    DEBUG_SET(DEBUG_ALTITUDE, 2, result);
 }
 
 void calculateEstimatedAltitude(timeUs_t currentTimeUs)

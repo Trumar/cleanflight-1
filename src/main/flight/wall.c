@@ -23,6 +23,8 @@
 #include "drivers/gpio.h"
 #include "drivers/system.h"
 
+#include "flight/imu.h"
+
 #include "fc/runtime_config.h"
 #include "fc/fc_rc.h"
 #include "fc/rc_controls.h"
@@ -35,61 +37,107 @@
 
 #include "io/serial.h"
 
+static int32_t rollAdjustment = 0;
+static int32_t errorVelocityI = 0;
 uint16_t wallDistance;
-int activeDistance = 90; //distance where the algorithm activates
-int targetDistance = 60; //target distance away from the object
-//int errorDeadband = 25; //keeps quad within set region, limits oscillation to and from wall
+int activeDistance = 100; //distance where the algorithm activates
+int targetDistance = 30; //target distance from center of quad to wall
+
 int errorP = 0;
 int errorI = 0;
 int error = 0;
 int correction = 0;
-int P = 6;
-int I = 10;
+int P = 2;
+int I = 20;
+int D = 10;
+
+int32_t calculateWallAdjustment(int32_t vel_tmp, float accY_tmp, float accY_old){
+
+	int32_t result = 0;
+	int error;
+	int32_t setVel;
+
+	int P = 20;
+	int I = 10;
+	int D = 10;
+
+	error = wallDistance - targetDistance;
+	error = applyDeadband(error,3); //remove some error measurements < 3
+
+	setVel = constrain(error ,-500,+500); //setVel is error measurement
+
+	error = setVel - vel_tmp;
+
+	// P
+	result = constrain((P * error / 32), -300, +300);
+	DEBUG_SET(DEBUG_ESC_SENSOR, 0, result);
+	// I
+	errorVelocityI += (error/I);
+	errorVelocityI = constrain(errorVelocityI, -15, +15);
+	result += errorVelocityI;     // I in range +/-200
+	DEBUG_SET(DEBUG_ESC_SENSOR, 1, errorVelocityI);
+
+	// D
+	result -= constrain(D * (accY_tmp + accY_old) / 512, -50, +50);
+	DEBUG_SET(DEBUG_ESC_SENSOR, 2, D * (accY_tmp + accY_old) / 512);
+
+	return result;
+
+}
 
 void calculateEstimatedWall(timeUs_t currentTimeUs)
 {
-    UNUSED(currentTimeUs);
-    //wall follow code here
-    wallDistance = ABS(getLeddarWall());
+	static timeUs_t previousTimeUs = 0;
+	//const uint32_t dTime = currentTimeUs - previousTimeUs;
+	previousTimeUs = currentTimeUs;
+
+	static float vel = 0.0f;
+	static float accAlt = 0.0f;
+
+	float accY_tmp = 0;
+
+#ifdef ACC
+	if (sensors(SENSOR_ACC)) {
+		const float dt = accTimeSum * 1e-6f; // delta acc reading time in seconds
+
+		// Integrator - velocity, cm/sec
+		if (accSumCount) {
+			accY_tmp = (float)accSum[1] / accSumCount; //Y axis
+		}
+		const float vel_acc = accY_tmp * accVelScale * (float)accTimeSum;
+
+		// Integrator - Altitude in cm
+		accAlt += (vel_acc * 0.5f) * dt + vel * dt;  // integrate velocity to get distance (x= a/2 * t^2)
+		vel += vel_acc;
+		//estimatedAltitude = accAlt;
+	}
+#endif
+	imuResetAccelerationSum();
+
+	//get leddar distance reading
+	wallDistance = ABS(getLeddarWall());
+
+	int32_t vel_tmp = lrintf(vel); //convert from float to long int
+
+
+	static float accY_old = 0.0f;
+
+	rollAdjustment = calculateWallAdjustment(vel_tmp, accY_tmp, accY_old);
+
+	accY_old = accY_tmp;
 
 }
 
 void wallFollow(void){
-
-	//algorithm will only activate when an object comes within 100 cm of the right side of the craft
+	//algorithm will only activate when an object comes within activeDistance of the right side of the craft
 	if (wallDistance <= activeDistance){
-
-		error = wallDistance - targetDistance;
-		error = applyDeadband(error,3); //remove some error measurements < 3
-
-		//only apply correction if needed
-		if (error != 0 ){
-			//if (wallDistance >= targetDistance){ //too far from wall
-				//P
-			correction = constrain(error/P, -10, 10);
-
-			DEBUG_SET(DEBUG_ESC_SENSOR, 1, correction);
-		//	}
-		//	else if (wallDistance < targetDistance) //too close to the wall
-		//	{
-
-		//	}
-
-			//I
-			errorI += (error/I);
-			errorI = constrain(errorI, -2, +2);
-			DEBUG_SET(DEBUG_ESC_SENSOR, 2, errorI);
-
-			correction += errorI;
-
-			rcCommand[ROLL] = constrain(correction, -500, +500); //limit roll to [-500;+500]
-		}
+		DEBUG_SET(DEBUG_ESC_SENSOR, 3, wallDistance);
+		//calculateWallThrottleAdjustment();
+		rcCommand[ROLL] = constrain(rollAdjustment, -50, +50); //limit roll to [-50;+50]
+	}else{
+		rollAdjustment = 0;
 	}
-
-DEBUG_SET(DEBUG_ESC_SENSOR, 0, wallDistance);
-
-
-
 }
+
 
 
