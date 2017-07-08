@@ -219,6 +219,7 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
 
     // P
     error = setVel - vel_tmp;
+    DEBUG_SET(DEBUG_ALTITUDE, 2, error);
     result = constrain((currentPidProfile->pid[PID_VEL].P * error / 32), -300, +300);
 
     // I
@@ -230,7 +231,7 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     result -= constrain(currentPidProfile->pid[PID_VEL].D * (accZ_tmp + accZ_old) / 512, -150, 150);
 
     return result; //altHoldThrottleAdjustment
-    DEBUG_SET(DEBUG_ALTITUDE, 2, result);
+    DEBUG_SET(DEBUG_ALTITUDE, 3, result);
 }
 
 void calculateEstimatedAltitude(timeUs_t currentTimeUs)

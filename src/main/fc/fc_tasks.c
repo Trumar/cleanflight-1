@@ -166,6 +166,7 @@ static void taskUpdateRxMain(timeUs_t currentTimeUs)
 #ifdef LEDDAR
     if (sensors(SENSOR_LEDDAR)) {
         updateLeddarAltHoldState();
+        updateWallFollowState();
     }
 #endif
 

@@ -142,7 +142,8 @@ static const box_t boxes[CHECKBOX_ITEM_COUNT] = {
     { BOXSONAR, "SONAR", 22 },
 	{ BOXLEDDAR, "LEDDAR", 23 },
 //    { BOXSERVO1, "SERVO1", 23 },
-    { BOXSERVO2, "SERVO2", 24 },
+	{ BOXWALL, "WALL", 24 },
+//    { BOXSERVO2, "SERVO2", 24 },
     { BOXSERVO3, "SERVO3", 25 },
     { BOXBLACKBOX, "BLACKBOX", 26 },
     { BOXFAILSAFE, "FAILSAFE", 27 },
@@ -350,6 +351,7 @@ void initActiveBoxIds(void)
 #ifdef LEDDAR
     if (feature(FEATURE_LEDDAR)) {
         BME(BOXLEDDAR);
+        BME(BOXWALL);
     }
 #endif
 
@@ -401,7 +403,7 @@ void initActiveBoxIds(void)
 #ifdef USE_SERVOS
     if (mixerConfig()->mixerMode == MIXER_CUSTOM_AIRPLANE) {
 //        BME(BOXSERVO1);
-        BME(BOXSERVO2);
+//        BME(BOXSERVO2);
         BME(BOXSERVO3);
     }
 #endif
