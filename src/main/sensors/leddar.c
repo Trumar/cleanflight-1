@@ -51,8 +51,10 @@
 
 serialPort_t *leddarSensorPort;
 serialPort_t *leddarSensorPort2;
-uint16_t distance;
-uint16_t distance2;
+uint16_t distance = 0;
+uint16_t distance2 = 0;
+uint16_t prev_distance2 = 0;
+
 
 void leddarInit(void)
 {
@@ -78,9 +80,14 @@ uint16_t getLeddarWall(){
 	return distance2;
 }
 
+uint16_t getPreviousLeddarWall(){
+	return prev_distance2;
+}
+
+
 void leddarUpdate(timeUs_t currentTimeUs)
 {
-    UNUSED(currentTimeUs);
+	UNUSED(currentTimeUs);
     uint8_t receivedByte = 0;//[3] = {0x00, 0x00, 0x00};
 
     uint8_t sensorSample[25] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -126,9 +133,10 @@ void leddarUpdate(timeUs_t currentTimeUs)
     distance = sensorSample[12] | sensorSample[11] << 8;
     distance = distance/10;
 
-    //distance = distance + 20; //compensate for 5.5V source
+
+    prev_distance2 = distance2;
     distance2 = sensorSample2[12] | sensorSample2[11] << 8;
-    distance2 = (distance2/10)-380; //380 cm offset for this sensor for whatever reason...
+    distance2 = (distance2/10)-360; //360 cm offset for this sensor for whatever reason...
 
    	//debug[0] = distance;
    	//debug[1] = distance2;

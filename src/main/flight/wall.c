@@ -40,7 +40,11 @@
 static int32_t rollAdjustment = 0;
 static int32_t errorVelocityI = 0;
 uint16_t wallDistance;
-int activeDistance = 150; //distance where the algorithm activates
+uint16_t prev_wallDistance;
+int prevError;
+int errorChange;
+
+//int activeDistance = 150; //distance where the algorithm activates
 uint16_t targetDistance; //target distance from center of quad to wall
 
 int error = 0;
@@ -69,37 +73,66 @@ int32_t calculateWallAdjustment(int32_t vel_tmp, float accY_tmp, float accY_old,
 	int32_t setVel;
 
 	//TUNE THESE
-	//int P_dist = 20;
-	int P = 60;
-	int I = 0;
-	int D = 13;
+	int P = 20;
+	int I = 10;
+	int D = 5;
+
+
+	//limit measurements for testing
+	wallDistance = constrain(wallDistance, -300,300);
+
+	//account for erroneous sensor readings when too close to the wall
+	if (wallDistance <= 0){
+		wallDistance = 1;
+	}
+
+	if (wallDistance - prev_wallDistance > 100){
+		wallDistance = prev_wallDistance;
+	}
+
+	//Calculate current error
+	error = wallDistance - targetDistance;
+	error = applyDeadband(error,5); //remove some error measurements < 13
+
+	//Calculate previous error (from previous measurement)
+	prevError = prev_wallDistance - targetDistance;
+	errorChange = prevError - error;
+
+	//get rid of some noise when stationary
+	if (errorChange <= 2 && errorChange >= -2){
+		errorChange = 0;
+	}
 
 	DEBUG_SET(DEBUG_ESC_SENSOR, 0, targetDistance);
 	DEBUG_SET(DEBUG_ESC_SENSOR, 1, wallDistance);
-	error = wallDistance - targetDistance;
-	error = applyDeadband(error,1); //remove some error measurements < 1
+	//DEBUG_SET(DEBUG_ESC_SENSOR, 1, prevError);
+	//DEBUG_SET(DEBUG_ESC_SENSOR, 2, error); //looks decent
+	//DEBUG_SET(DEBUG_ESC_SENSOR, 3, errorChange);
 
-	setVel = constrain(error, -200,+200); //setVel is error measurement
+
+	setVel = constrain(error, -200,+200);
+
+	//just in case it spikes up like crazy (end of wall, etc.)
+	if (error > 200){
+		error = 0;
+	}
 
 	error = setVel;// - vel_tmp;
-
 
 	// P
 	result = constrain((P * error / 32), -80, +80);
 	DEBUG_SET(DEBUG_ESC_SENSOR, 2, result);
 
 	// I
-	errorVelocityI += ((setVel-vel_tmp)/I);
-	errorVelocityI = constrain(errorVelocityI, -15, +15);
+	errorVelocityI += (error/I);
+	errorVelocityI = constrain(errorVelocityI, -5, +5);
 	//result += errorVelocityI;     // I in range +/-200
-
+	//DEBUG_SET(DEBUG_ESC_SENSOR, 2, errorVelocityI);
 	// D
 
-	result += constrain(vel_acc, -10, +10);  //1024 is max acc reading
-	//result -= constrain(D/10 *(accY_tmp + accY_old) / 512, -10, +10);  //1024 is max acc reading
-	DEBUG_SET(DEBUG_ESC_SENSOR, 3, result);
-	//DEBUG_SET(DEBUG_ESC_SENSOR, 2, D * (accY_tmp + accY_old) / 512);
-	//DEBUG_SET(DEBUG_ESC_SENSOR, 3, result);
+	result -= constrain(D * errorChange/10, -30, +30);  //1024 is max acc reading
+
+	DEBUG_SET(DEBUG_ESC_SENSOR, 3, D * errorChange/10);
 	return result;
 
 }
@@ -111,7 +144,7 @@ void calculateEstimatedWall(timeUs_t currentTimeUs)
 	//const uint32_t dTime = currentTimeUs - previousTimeUs;
 	//previousTimeUs = currentTimeUs;
 
-	//static float vel = 0.0f;
+	static float vel = 0.0f;
 	//static float accAlt = 0.0f;
 
 	float accY_tmp = 0;
@@ -127,12 +160,12 @@ void calculateEstimatedWall(timeUs_t currentTimeUs)
 		}
 		const float vel_acc = accY_tmp * accVelScale * (float)accTimeSum;
 
-		/*
+
 		// Integrator - Altitude in cm
-		accAlt += (vel_acc * 0.5f) * dt + vel * dt;  // integrate velocity to get distance (x= a/2 * t^2)
+		//accAlt += (vel_acc * 0.5f) * dt + vel * dt;  // integrate velocity to get distance (x= a/2 * t^2)
 		vel += vel_acc;
 		//estimatedAltitude = accAlt;
-		 */
+
 
 	}
 #endif
@@ -140,9 +173,10 @@ void calculateEstimatedWall(timeUs_t currentTimeUs)
 
 	//get leddar distance reading
 	wallDistance = ABS(getLeddarWall());
+	prev_wallDistance = ABS(getPreviousLeddarWall());
 
-	//int32_t vel_tmp = lrintf(vel); //convert from float to long int
-	int32_t vel_tmp = 0;
+	int32_t vel_tmp = lrintf(vel); //convert from float to long int
+	//int32_t vel_tmp = 0;
 	static float accY_old = 0.0f;
 
 	rollAdjustment = calculateWallAdjustment(vel_tmp, accY_tmp, accY_old, vel_acc);
@@ -154,12 +188,12 @@ void calculateEstimatedWall(timeUs_t currentTimeUs)
 void wallFollow(void){
 	//algorithm will only activate when an object comes within activeDistance of the right side of the craft
 	//DEBUG_SET(DEBUG_ESC_SENSOR, 3, wallDistance);
-	if (wallDistance <= activeDistance){
+	//	if (wallDistance <= activeDistance){
 
-		//calculateWallThrottleAdjustment();
-		rcCommand[ROLL] = constrain(rollAdjustment, -50, +50); //limit roll to [-50;+50]
-	}else{
-		rollAdjustment = 0;
-	}
+	//calculateWallThrottleAdjustment();
+	rcCommand[ROLL] = constrain(rollAdjustment, -50, +50); //limit roll to [-50;+50]
+	//	}else{
+	//		rollAdjustment = 0;
+	//	}
 }
 
