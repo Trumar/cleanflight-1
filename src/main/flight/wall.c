@@ -43,6 +43,7 @@ uint16_t wallDistance;
 uint16_t prev_wallDistance;
 int prevError;
 int errorChange;
+int fusedErrorChange;
 
 //int activeDistance = 150; //distance where the algorithm activates
 uint16_t targetDistance; //target distance from center of quad to wall
@@ -72,10 +73,12 @@ int32_t calculateWallAdjustment(int32_t vel_tmp, float accY_tmp, float accY_old,
 	int error;
 	int32_t setVel;
 
+	int dist_multiplier = 0;
+
 	//TUNE THESE
 	int P = 20;
-	int I = 10;
-	int D = 5;
+	int I = 20;
+	int D = 10;
 
 
 	//limit measurements for testing
@@ -92,7 +95,7 @@ int32_t calculateWallAdjustment(int32_t vel_tmp, float accY_tmp, float accY_old,
 
 	//Calculate current error
 	error = wallDistance - targetDistance;
-	error = applyDeadband(error,5); //remove some error measurements < 13
+	error = applyDeadband(error,1); //remove some error measurements < 13
 
 	//Calculate previous error (from previous measurement)
 	prevError = prev_wallDistance - targetDistance;
@@ -103,8 +106,12 @@ int32_t calculateWallAdjustment(int32_t vel_tmp, float accY_tmp, float accY_old,
 		errorChange = 0;
 	}
 
+	//add acc data to errorChange
+	fusedErrorChange = errorChange -(accY_old + accY_tmp)/100;
+
 	DEBUG_SET(DEBUG_ESC_SENSOR, 0, targetDistance);
 	DEBUG_SET(DEBUG_ESC_SENSOR, 1, wallDistance);
+
 	//DEBUG_SET(DEBUG_ESC_SENSOR, 1, prevError);
 	//DEBUG_SET(DEBUG_ESC_SENSOR, 2, error); //looks decent
 	//DEBUG_SET(DEBUG_ESC_SENSOR, 3, errorChange);
@@ -117,22 +124,36 @@ int32_t calculateWallAdjustment(int32_t vel_tmp, float accY_tmp, float accY_old,
 		error = 0;
 	}
 
-	error = setVel;// - vel_tmp;
+	DEBUG_SET(DEBUG_ESC_SENSOR, 2, setVel);
+	DEBUG_SET(DEBUG_ESC_SENSOR, 3, vel_tmp);
+
+	error = setVel - vel_tmp;
+
+	//attempt to scale proportional adjustment (non linear)
+/*
+	if (error < 6){
+		dist_multiplier = 2;
+	}else{
+		dist_multiplier = 1;
+	}
+*/
+
 
 	// P
-	result = constrain((P * error / 32), -80, +80);
-	DEBUG_SET(DEBUG_ESC_SENSOR, 2, result);
+	result = constrain((dist_multiplier * P * error / 32), -80, +80);
 
 	// I
 	errorVelocityI += (error/I);
-	errorVelocityI = constrain(errorVelocityI, -5, +5);
+	errorVelocityI = constrain(errorVelocityI, -4, +4);
 	//result += errorVelocityI;     // I in range +/-200
-	//DEBUG_SET(DEBUG_ESC_SENSOR, 2, errorVelocityI);
+
 	// D
-
-	result -= constrain(D * errorChange/10, -30, +30);  //1024 is max acc reading
-
-	DEBUG_SET(DEBUG_ESC_SENSOR, 3, D * errorChange/10);
+//	if (error > 0){
+		result -= constrain(D * fusedErrorChange/10, -40, +40);
+//	}else{
+//		result -= constrain(D * fusedErrorChange/10, -40, +40);
+//	}
+	//DEBUG_SET(DEBUG_ESC_SENSOR, 3, D * fusedErrorChange/10);
 	return result;
 
 }
@@ -191,7 +212,7 @@ void wallFollow(void){
 	//	if (wallDistance <= activeDistance){
 
 	//calculateWallThrottleAdjustment();
-	rcCommand[ROLL] = constrain(rollAdjustment, -50, +50); //limit roll to [-50;+50]
+	rcCommand[ROLL] = constrain(rollAdjustment, -100, +100); //limit roll to [-50;+50]
 	//	}else{
 	//		rollAdjustment = 0;
 	//	}
