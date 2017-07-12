@@ -60,7 +60,6 @@ void updateWallFollowState(void){
 	if (!FLIGHT_MODE(WALL_MODE)) {
 		ENABLE_FLIGHT_MODE(WALL_MODE);
 		targetDistance = wallDistance;
-		///initialThrottleHold = rcData[THROTTLE];
 		errorVelocityI = 0;
 		rollAdjustment = 0;
 	}
@@ -70,19 +69,28 @@ void updateWallFollowState(void){
 int32_t calculateWallAdjustment(int32_t vel_tmp, float accY_tmp, float accY_old, const float vel_acc){
 
 	int32_t result = 0;
-	int error;
+	int error = 0;
 	int32_t setVel;
 
-	int dist_multiplier = 0;
+	/* Best settings so far
+	 * int P = 0;
+	 * int I = 20;
+	 * int D = 10;
+	 *
+	 */
 
 	//TUNE THESE
-	int P = 20;
-	int I = 20;
-	int D = 10;
+	int P_dist = 100;
+
+
+	int P_vel = 15;
+	//	int I_vel = 60;
+	int D_vel = 20;
 
 
 	//limit measurements for testing
 	wallDistance = constrain(wallDistance, -300,300);
+
 
 	//account for erroneous sensor readings when too close to the wall
 	if (wallDistance <= 0){
@@ -95,7 +103,9 @@ int32_t calculateWallAdjustment(int32_t vel_tmp, float accY_tmp, float accY_old,
 
 	//Calculate current error
 	error = wallDistance - targetDistance;
-	error = applyDeadband(error,1); //remove some error measurements < 13
+	error = applyDeadband(error,3); //remove some error measurements < 3
+
+	DEBUG_SET(DEBUG_ESC_SENSOR, 0, wallDistance);
 
 	//Calculate previous error (from previous measurement)
 	prevError = prev_wallDistance - targetDistance;
@@ -106,54 +116,45 @@ int32_t calculateWallAdjustment(int32_t vel_tmp, float accY_tmp, float accY_old,
 		errorChange = 0;
 	}
 
-	//add acc data to errorChange
+	//add acc data to errorChange (combines both acc and leddar readings)
 	fusedErrorChange = errorChange -(accY_old + accY_tmp)/100;
 
-	DEBUG_SET(DEBUG_ESC_SENSOR, 0, targetDistance);
-	DEBUG_SET(DEBUG_ESC_SENSOR, 1, wallDistance);
+	//DEBUG_SET(DEBUG_ESC_SENSOR, 3, wallDistance);
 
-	//DEBUG_SET(DEBUG_ESC_SENSOR, 1, prevError);
-	//DEBUG_SET(DEBUG_ESC_SENSOR, 2, error); //looks decent
-	//DEBUG_SET(DEBUG_ESC_SENSOR, 3, errorChange);
-
-
-	setVel = constrain(error, -200,+200);
+	setVel = constrain(P_dist * error / 100, -200,+200);
 
 	//just in case it spikes up like crazy (end of wall, etc.)
 	if (error > 200){
 		error = 0;
 	}
 
-	DEBUG_SET(DEBUG_ESC_SENSOR, 2, setVel);
-	DEBUG_SET(DEBUG_ESC_SENSOR, 3, vel_tmp);
+	//DEBUG_SET(DEBUG_ESC_SENSOR, 1, setVel);
+	//DEBUG_SET(DEBUG_ESC_SENSOR, 2, (accY_old + accY_tmp)/100);
+
+	//DEBUG_SET(DEBUG_ESC_SENSOR, 0, vel_tmp);
 
 	error = setVel - vel_tmp;
+	//error = setVel + (accY_old + accY_tmp)/100;
+	//error = setVel;
 
-	//attempt to scale proportional adjustment (non linear)
-/*
-	if (error < 6){
-		dist_multiplier = 2;
-	}else{
-		dist_multiplier = 1;
-	}
-*/
-
+//////////////////////////// P I D //////////////////////////////
 
 	// P
-	result = constrain((dist_multiplier * P * error / 32), -80, +80);
+	result = constrain((P_vel * error / 100), -80, +80);
+	DEBUG_SET(DEBUG_ESC_SENSOR, 1, result);
 
 	// I
-	errorVelocityI += (error/I);
-	errorVelocityI = constrain(errorVelocityI, -4, +4);
-	//result += errorVelocityI;     // I in range +/-200
+	//errorVelocityI += (error/I_vel);
+	//errorVelocityI = constrain(errorVelocityI, -4, +4);
+	//	result += errorVelocityI;     // I in range +/-200
 
 	// D
-//	if (error > 0){
-		result -= constrain(D * fusedErrorChange/10, -40, +40);
-//	}else{
-//		result -= constrain(D * fusedErrorChange/10, -40, +40);
-//	}
-	//DEBUG_SET(DEBUG_ESC_SENSOR, 3, D * fusedErrorChange/10);
+	result -= constrain(D_vel * fusedErrorChange/10, -40, +40);
+
+	//result -= constrain(D_vel * (accY_tmp + accY_old)/512, -40, 40);
+	DEBUG_SET(DEBUG_ESC_SENSOR, 2, D_vel * fusedErrorChange/10);
+	DEBUG_SET(DEBUG_ESC_SENSOR, 3, 10 * vel_tmp);
+
 	return result;
 
 }
@@ -181,16 +182,18 @@ void calculateEstimatedWall(timeUs_t currentTimeUs)
 		}
 		const float vel_acc = accY_tmp * accVelScale * (float)accTimeSum;
 
-
 		// Integrator - Altitude in cm
 		//accAlt += (vel_acc * 0.5f) * dt + vel * dt;  // integrate velocity to get distance (x= a/2 * t^2)
-		vel += vel_acc;
+		//vel += vel_acc;
+		vel = vel_acc;
 		//estimatedAltitude = accAlt;
 
 
 	}
 #endif
-	imuResetAccelerationSum();
+	// Altitude task is always active when LEDDAR feature is enabled,
+	// so we don't need to reset the imu twice (makes for some nasty acc data!)
+	//	imuResetAccelerationSum();
 
 	//get leddar distance reading
 	wallDistance = ABS(getLeddarWall());
@@ -212,7 +215,7 @@ void wallFollow(void){
 	//	if (wallDistance <= activeDistance){
 
 	//calculateWallThrottleAdjustment();
-	rcCommand[ROLL] = constrain(rollAdjustment, -100, +100); //limit roll to [-50;+50]
+	rcCommand[ROLL] = constrain(rollAdjustment, -60, +60); //limit roll to [-50;+50]
 	//	}else{
 	//		rollAdjustment = 0;
 	//	}
