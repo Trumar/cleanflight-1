@@ -129,7 +129,7 @@ void leddarUpdate(timeUs_t currentTimeUs)
     	i++;
     }
 
-//displays in distance in cm
+    //displays in distance in cm
     distance = sensorSample[12] | sensorSample[11] << 8;
     distance = distance/10;
 

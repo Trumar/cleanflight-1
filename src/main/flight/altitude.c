@@ -36,6 +36,7 @@
 #include "fc/runtime_config.h"
 
 #include "flight/altitude.h"
+#include "flight/wall.h"
 #include "flight/imu.h"
 #include "flight/pid.h"
 
@@ -203,8 +204,6 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
 
     if (!velocityControl) {
 
-        DEBUG_SET(DEBUG_ALTITUDE, 0, estimatedAltitude);
-        DEBUG_SET(DEBUG_ALTITUDE, 1, vel_tmp);
         error = constrain(AltHold - estimatedAltitude, -500, 500);
         error = applyDeadband(error, 2); // remove small P parameter to reduce noise near zero position
         setVel = constrain((currentPidProfile->pid[PID_ALT].P * error / 128), -300, +300); // limit velocity to +/- 3 m/s
@@ -213,6 +212,10 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     } else {
         setVel = setVelocity;
     }
+    DEBUG_SET(DEBUG_ALTITUDE, 0, AltHold);
+    DEBUG_SET(DEBUG_ALTITUDE, 1, estimatedAltitude);
+    DEBUG_SET(DEBUG_ALTITUDE, 2, vel_tmp);
+
 
     // Velocity PID-Controller
 
@@ -229,7 +232,6 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     result -= constrain(currentPidProfile->pid[PID_VEL].D * (accZ_tmp + accZ_old) / 512, -150, 150);
 
     return result; //altHoldThrottleAdjustment
-    //DEBUG_SET(DEBUG_ALTITUDE, 3, result);
 }
 
 void calculateEstimatedAltitude(timeUs_t currentTimeUs)
@@ -242,6 +244,7 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     previousTimeUs = currentTimeUs;
 
     static float vel = 0.0f;
+    static float velY = 0.0f;
     static float accAlt = 0.0f;
 
     int32_t baroAlt = 0;
@@ -270,34 +273,39 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     }
 #endif
     float accZ_tmp = 0;
+    float accY_tmp = 0;
 #ifdef ACC
     if (sensors(SENSOR_ACC)) {
         const float dt = accTimeSum * 1e-6f; // delta acc reading time in seconds
 
         // Integrator - velocity, cm/sec
         if (accSumCount) {
-            accZ_tmp = (float)accSum[2] / accSumCount;
-        }
-        const float vel_acc = accZ_tmp * accVelScale * (float)accTimeSum;
 
+            accZ_tmp = (float)accSum[2] / accSumCount;
+            accY_tmp = (float)accSum[1] / accSumCount;
+        }
+
+        const float vel_acc = accZ_tmp * accVelScale * (float)accTimeSum;
+        const float vel_accY = accY_tmp * accVelScale * (float)accTimeSum;
         // Integrator - Altitude in cm
-        accAlt += (vel_acc * 0.5f) * dt + vel * dt;  // integrate velocity to get distance (x= a/2 * t^2)
-        accAlt = accAlt * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_alt) + (float)baro.BaroAlt * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_alt));    // complementary filter for altitude estimation (baro & acc)
+        //accAlt += (vel_acc * 0.5f) * dt + vel * dt;  // integrate velocity to get distance (x= a/2 * t^2)
+        //accAlt = accAlt * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_alt) + (float)baro.BaroAlt * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_alt));    // complementary filter for altitude estimation (baro & acc)
+
+
         vel += vel_acc;
-        estimatedAltitude = accAlt;
+        velY += vel_accY;
+
     }
 #endif
-    DEBUG_SET(DEBUG_ALTITUDE, 2, accSum[2] / accSumCount);
+
 
     //DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_ACC, accSum[2] / accSumCount);
     //DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_VEL, vel);
     //DEBUG_SET(DEBUG_ALTITUDE, DEBUG_ALTITUDE_HEIGHT, accAlt);
 
+  imuResetAccelerationSum();
+  int32_t baroVel = 0;
 
-
-    imuResetAccelerationSum();
-
-    int32_t baroVel = 0;
 #ifdef BARO
     if (sensors(SENSOR_BARO)) {
         if (!isBaroCalibrationComplete()) {
@@ -322,14 +330,23 @@ void calculateEstimatedAltitude(timeUs_t currentTimeUs)
     // apply Complimentary Filter to keep the calculated velocity based on baro velocity (i.e. near real velocity).
     // By using CF it's possible to correct the drift of integrated accZ (velocity) without loosing the phase, i.e without delay
     vel = vel * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel) + baroVel * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel));
+    velY = velY * CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel) + baroVel * (1.0f - CONVERT_PARAMETER_TO_FLOAT(barometerConfig()->baro_cf_vel));
+
     int32_t vel_tmp = lrintf(vel);
+    int32_t velY_tmp = lrintf(velY);
 
     // set vario
     estimatedVario = applyDeadband(vel_tmp, 5);
 
     static float accZ_old = 0.0f;
+    static float accY_old = 0.0f;
+
     altHoldThrottleAdjustment = calculateAltHoldThrottleAdjustment(vel_tmp, accZ_tmp, accZ_old);
+    //send velocity info to the wall function to calculate roll adjustment
+    sendVeloctyToWall(velY_tmp, accY_tmp, accY_old);
+
     accZ_old = accZ_tmp;
+    accY_old = accY_tmp;
 
 }
 #endif // defined(BARO) || defined(SONAR) || defined(LEDDAR)

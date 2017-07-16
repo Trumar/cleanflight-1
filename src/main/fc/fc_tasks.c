@@ -201,6 +201,11 @@ static void taskUpdateBaro(timeUs_t currentTimeUs)
 }
 #endif
 
+static void taskCalculateWall(timeUs_t currentTimeUs){
+	calculateEstimatedWall(currentTimeUs);
+}
+
+
 //add LEDDAR here
 #if defined(BARO) || defined(SONAR) || defined(LEDDAR)
 static void taskCalculateAltitude(timeUs_t currentTimeUs)
@@ -508,7 +513,7 @@ cfTask_t cfTasks[TASK_COUNT] = {
     },
 	[TASK_WALL] = {
 	        .taskName = "WALL",
-	        .taskFunc = calculateEstimatedWall,
+	        .taskFunc = taskCalculateWall,//calculateEstimatedWall,
 	        .desiredPeriod = TASK_PERIOD_HZ(40),//TASK_PERIOD_MS(150),
 	        .staticPriority = TASK_PRIORITY_LOW,
 	    },
