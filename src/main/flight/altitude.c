@@ -214,13 +214,15 @@ int32_t calculateAltHoldThrottleAdjustment(int32_t vel_tmp, float accZ_tmp, floa
     }
     DEBUG_SET(DEBUG_ALTITUDE, 0, AltHold);
     DEBUG_SET(DEBUG_ALTITUDE, 1, estimatedAltitude);
-    DEBUG_SET(DEBUG_ALTITUDE, 2, vel_tmp);
-
 
     // Velocity PID-Controller
 
     // P
+
     error = setVel - vel_tmp;
+    //error stabilizes to a set value to compensate for gravity (keeps it from falling to the ground)
+
+
     result = constrain((currentPidProfile->pid[PID_VEL].P * error / 32), -300, +300);
 
     // I

@@ -42,7 +42,6 @@
 
 static int32_t rollAdjustment = 0;
 static int32_t errorVelocityI = 0;
-int32_t prev_vel_tmp;
 uint16_t wallDistance;
 uint16_t prev_wallDistance;
 int prevError;
@@ -88,11 +87,11 @@ int32_t calculateWallAdjustment(int32_t vel_tmp, float accY_tmp, float accY_old)
 	int32_t setVel;
 
 	//TUNE THESE
-	int P_dist = 100;
+	int P_dist = 140;
 
-	int P_vel = 0;
+	int P_vel = 20;
 	//int I_vel = 0;
-	int D_vel = 30;
+	int D_vel = 20;
 
 	//limit measurements for testing
 	wallDistance = constrain(wallDistance, -300,300);
@@ -105,47 +104,34 @@ int32_t calculateWallAdjustment(int32_t vel_tmp, float accY_tmp, float accY_old)
 		wallDistance = prev_wallDistance;
 	}
 
-	DEBUG_SET(DEBUG_ESC_SENSOR, 0, targetDistance);
-	DEBUG_SET(DEBUG_ESC_SENSOR, 1, wallDistance);
-
 	//Calculate current error
 	error = targetDistance - wallDistance;
-	error = applyDeadband(error,1); //remove some error measurements < 3
-
-
-
+	setVel = constrain(P_dist * error / 100, -200,+200);
 
 	//Calculate previous error (from previous measurement)
-	prevError = (prev_vel_tmp) - (P_dist * (targetDistance - prev_wallDistance)/100);
+	prevError = (P_dist * (targetDistance - prev_wallDistance)/100);
 
-	setVel = constrain(P_dist * error / 100, -200,+200);
+	errorChange = (targetDistance - prev_wallDistance) - error;
+
 
 	//just in case it spikes up like crazy (end of wall, etc.)
 	if (error > 200){
 		error = 0;
 	}
 
-	DEBUG_SET(DEBUG_ALTITUDE, 3, vel_tmp);
 
-	error = setVel - vel_tmp;
 
-	DEBUG_SET(DEBUG_ESC_SENSOR, 2, error);
 
-	errorChange = constrain(prevError - error, -20, 20);
-	//errorChange = constrain(prevError - error, -20, 20);
-	//get rid of some noise when stationary
-	//	if (errorChange <= 1 && errorChange >= -1){
-	//		errorChange = 0;
-	//	}
+	DEBUG_SET(DEBUG_ESC_SENSOR, 0, wallDistance);
 
-	//add acc data to errorChange (combines both acc and leddar readings)
-	//fusedErrorChange = errorChange/2 +(accY_old + accY_tmp)/50;
-	//fusedErrorChange = errorChange -(accY_old + accY_tmp)/100;
 
+
+	error = vel_tmp - setVel; //error in cm/s
+	DEBUG_SET(DEBUG_ESC_SENSOR, 1, error);
+	//DEBUG_SET(DEBUG_ESC_SENSOR, 2, error);
 	//////////////////////////// P I D //////////////////////////////
 	// P
 	result = constrain((P_vel * error / 100), -100, +100);
-	//DEBUG_SET(DEBUG_ESC_SENSOR, 2, result);
 
 	// I
 	//errorVelocityI += (error/I_vel);
@@ -153,20 +139,44 @@ int32_t calculateWallAdjustment(int32_t vel_tmp, float accY_tmp, float accY_old)
 	//result += errorVelocityI;     // I in range +/-200
 
 	// D
-	DEBUG_SET(DEBUG_ESC_SENSOR, 3, (accY_old + accY_tmp));
+	//DEBUG_SET(DEBUG_ESC_SENSOR, 3, D_vel * (accY_old + accY_tmp)/512);
+	//DEBUG_SET(DEBUG_ESC_SENSOR, 3, D_vel * (accY_old + accY_tmp)/512);
 
-	result -= constrain(D_vel * errorChange/10, -40, +40);
-	//result -= constrain(D_vel * (accY_old + accY_tmp)/512, -100, +100);
+	result -= constrain(D_vel * (accY_old + accY_tmp)/512, -40, +40);
 	//DEBUG_SET(DEBUG_ESC_SENSOR, 1, (accY_old + accY_tmp)/512);
+	DEBUG_SET(DEBUG_ESC_SENSOR, 2, (accY_old + accY_tmp));
 
+	//Basically a better derivative block for the PID controller
+	//add a "pulse" ROLL command to stop the quadcopter from moving in the direction it is heading based on the current error and direction
+	if(ABS(targetDistance - wallDistance) <= 25){
+		if ((accY_old + accY_tmp) >= -50 && (accY_old + accY_tmp) <= -20){
+			if (error >= 15 && error <= 50){
+				DEBUG_SET(DEBUG_ESC_SENSOR, 3, -10);//coming in towards wall near target
+				result -= 40;
+				//rcCommand[ROLL] = -20;
+			}else if (error >= -50 && error <= -15){
+				DEBUG_SET(DEBUG_ESC_SENSOR, 3, 10);//going away from wall, approaching target
+				result += 40;
+				//rcCommand[ROLL] = 20;
+			}
+			else{
+				DEBUG_SET(DEBUG_ESC_SENSOR, 3, 0);
+			}
+		}else{ //acceleration check
+			DEBUG_SET(DEBUG_ESC_SENSOR, 3, 0);
+		}
+	}
+	else{ //no correction needed, out of range
+		DEBUG_SET(DEBUG_ESC_SENSOR, 3, 0)
+	}
 
 	return result;
 
-}
+}//calculateWallAdjustment
 
 void calculateEstimatedWall(timeUs_t currentTimeUs)
 {
-UNUSED(currentTimeUs);
+	UNUSED(currentTimeUs);
 
 	//get leddar distance readings for wall sensor
 #ifdef LEDDAR
